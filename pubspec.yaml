@@ -1,0 +1,38 @@
+name: chronosense
+description: "ChronoSense - A Dynamic Sensory Memory Journal capturing ambient device telemetry (motion, sound, ambiance) into living memories."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Device Sensors & Audio
+  sensors_plus: ^5.0.1
+  noise_meter: ^5.0.2
+  permission_handler: ^11.3.1
+
+  # Fluid Animations & UI
+  flutter_animate: ^4.5.2
+
+  # Offline-First Persistence & Utilities
+  shared_preferences: ^2.2.3
+  uuid: ^4.4.0
+  intl: ^0.19.0
+  vector_math: ^2.1.4
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

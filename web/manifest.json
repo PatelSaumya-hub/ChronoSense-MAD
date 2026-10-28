@@ -1,0 +1,11 @@
+{
+  "name": "ChronoSense - Sensory Memory Journal",
+  "short_name": "ChronoSense",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0B0D17",
+  "theme_color": "#6C5CE7",
+  "description": "Dynamic sensory memory journal capturing ambient device telemetry.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}
