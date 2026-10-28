@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ChronoSense • Sensory Memory Journal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-purple: #6C5CE7;
+      --neon-cyan: #00CEC9;
+      --neon-pink: #FD79A8;
+      --neon-amber: #FFA502;
+      --neon-green: #2ED573;
+      --bg-obsidian: #0A0C16;
+      --bg-surface: #111528;
+      --bg-surface-light: #1B213B;
+      --glass-fill: rgba(27, 33, 59, 0.45);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-border-glow: rgba(108, 92, 231, 0.35);
+      --text-primary: #F8F9FA;
+      --text-secondary: #A0AEC0;
+      --text-muted: #6B7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-obsidian);
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image: radial-gradient(circle at 50% 0%, rgba(108, 92, 231, 0.18) 0%, transparent 60%);
+    }
+
+    /* Mobile Container Frame */
+    .app-viewport {
+      width: 100%;
+      max-width: 440px;
+      height: 100vh;
+      max-height: 920px;
+      position: relative;
+      background: var(--bg-obsidian);
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Ambient Particle Canvas */
+    #particleCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Glassmorphism Classes */
+    .glass-card {
+      background: var(--glass-fill);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 16px;
+      position: relative;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.22);
+      transform: translateY(-2px);
+    }
+
+    /* Screen Views */
+    .screen-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      z-index: 2;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97);
+      transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .screen-view.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    /* Custom Scrollbar */
+    .screen-view::-webkit-scrollbar {
+      width: 4px;
+    }
+    .screen-view::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    /* Top App Header */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-top: 8px;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+    }
+
+    .brand-dot {
+      width: 9px;
+      height: 9px;
+      background: var(--neon-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--neon-cyan);
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .badge-counter {
+      background: rgba(108, 92, 231, 0.18);
+      border: 1px solid rgba(108, 92, 231, 0.45);
+      color: var(--neon-purple);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* HUD Stats Ribbon */
+    .stats-ribbon {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-bottom: 16px;
+      border-color: var(--glass-border-glow);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .stat-val {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .divider-v {
+      width: 1px;
+      height: 28px;
+      background: var(--glass-border);
+    }
+
+    /* Search & Filter */
+    .search-input-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--glass-fill);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 12px 14px 12px 38px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--neon-purple);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .mood-filters {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      scrollbar-width: none;
+    }
+    .mood-filters::-webkit-scrollbar { display: none; }
+
+    .mood-chip {
+      background: var(--glass-fill);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .mood-chip.active {
+      background: rgba(108, 92, 231, 0.25);
+      border-color: var(--neon-purple);
+      color: var(--text-primary);
+      box-shadow: 0 0 12px rgba(108, 92, 231, 0.35);
+    }
+
+    /* Timeline Cards */
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 90px;
+    }
+
+    .memory-card {
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .memory-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .memory-mood-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .memory-date {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .memory-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .memory-content-snippet {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .sensor-pills-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .sensor-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Floating Action Button */
+    .fab-capture {
+      position: absolute;
+      bottom: 24px;
+      right: 20px;
+      background: var(--neon-purple);
+      color: white;
+      border: none;
+      border-radius: 28px;
+      padding: 14px 22px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(108, 92, 231, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+    }
+
+    .fab-capture:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 30px rgba(108, 92, 231, 0.7);
+    }
+
+    /* Live Visualizers */
+    .visualizer-box {
+      width: 100%;
+      height: 110px;
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    #waveCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .db-hud-badge {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 12px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(0, 206, 201, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* 3D Gyro Card */
+    .gyro-stage {
+      perspective: 700px;
+      margin: 14px 0;
+    }
+
+    .gyro-card-3d {
+      width: 100%;
+      min-height: 160px;
+      background: var(--glass-fill);
+      border: 1px solid rgba(0, 206, 201, 0.3);
+      border-radius: 20px;
+      padding: 16px;
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .specular-shine {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, rgba(0, 206, 201, 0.15) 0%, transparent 70%);
+      transition: background 0.1s ease-out;
+    }
+
+    .coords-grid {
+      display: flex;
+      justify-content: space-around;
+      margin: 14px 0 8px;
+      text-align: center;
+    }
+
+    .coord-item .val {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      font-variant-numeric: tabular-nums;
+    }
+    .coord-item .lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Buttons */
+    .btn-action {
+      width: 100%;
+      padding: 14px;
+      border-radius: 16px;
+      border: none;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-freeze {
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      color: white;
+      box-shadow: 0 8px 24px rgba(0, 206, 201, 0.35);
+      margin-bottom: 20px;
+    }
+
+    .btn-primary {
+      background: var(--neon-purple);
+      color: white;
+      box-shadow: 0 8px 24px rgba(108, 92, 231, 0.45);
+      margin-top: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .form-input, .form-textarea {
+      width: 100%;
+      background: var(--glass-fill);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-textarea {
+      min-height: 85px;
+      resize: none;
+      line-height: 1.5;
+    }
+
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--neon-purple);
+    }
+
+    /* Switch Component */
+    .switch-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 22px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      border-radius: 22px;
+      transition: .3s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .3s;
+    }
+    input:checked + .slider { background-color: var(--neon-amber); }
+    input:checked + .slider:before { transform: translateX(16px); }
+
+    /* Modal Matrix Rows */
+    .matrix-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .matrix-row:last-child { border-bottom: none; }
+    .matrix-lbl { color: var(--text-muted); }
+    .matrix-val { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+
+  <div class="app-viewport">
+    <!-- Living Ambient Particle Canvas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- SCREEN 1: TIMELINE DASHBOARD -->
+    <div id="dashboardScreen" class="screen-view active">
+      <div class="app-header">
+        <div>
+          <div class="brand-title">
+            <div class="brand-dot"></div>
+            CHRONOSENSE
+          </div>
+          <div class="brand-sub">Dynamic Sensory Memory Journal</div>
+        </div>
+        <div class="badge-counter" id="memoriesBadge">
+          <span>⚡</span> <span id="entryCountText">3 Memories</span>
+        </div>
+      </div>
+
+      <!-- Telemetry Stats Ribbon -->
+      <div class="glass-card stats-ribbon">
+        <div class="stat-item">
+          <div class="stat-label">Acoustic Avg</div>
+          <div class="stat-val" style="color: var(--neon-cyan)" id="statAcousticAvg">55 dB</div>
+        </div>
+        <div class="divider-v"></div>
+        <div class="stat-item">
+          <div class="stat-label">Motion Index</div>
+          <div class="stat-val" style="color: var(--neon-pink)" id="statMotionAvg">39%</div>
+        </div>
+        <div class="divider-v"></div>
+        <div class="stat-item">
+          <div class="stat-label">Telemetry</div>
+          <div class="stat-val" style="color: var(--neon-green)">Active</div>
+        </div>
+      </div>
+
+      <!-- Search Field -->
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search memories, keywords, or sensory tags...">
+      </div>
+
+      <!-- Mood Filters -->
+      <div class="mood-filters" id="moodFilters">
+        <div class="mood-chip active" data-mood="all">All Moods</div>
+        <div class="mood-chip" data-mood="serene">🌿 Serene</div>
+        <div class="mood-chip" data-mood="energetic">⚡ Energetic</div>
+        <div class="mood-chip" data-mood="reflective">🌙 Reflective</div>
+        <div class="mood-chip" data-mood="anxious">🌪️ Anxious</div>
+        <div class="mood-chip" data-mood="focused">🎯 Focused</div>
+      </div>
+
+      <!-- Timeline Cards -->
+      <div class="timeline-list" id="timelineList"></div>
+
+      <!-- Floating Action Button -->
+      <button class="fab-capture" id="openCaptureBtn">
+        <span>✨</span> Capture Telemetry
+      </button>
+    </div>
+
+    <!-- SCREEN 2: SENSORY CAPTURE SCREEN -->
+    <div id="captureScreen" class="screen-view">
+      <div class="app-header">
+        <button id="closeCaptureBtn" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">✕</button>
+        <div style="font-weight:800; font-size:14px; letter-spacing:1px;">ENCODE SENSORY MEMORY</div>
+        <div class="switch-wrap">
+          <span style="color:var(--neon-amber)" id="mockModeLabel">MOCK</span>
+          <label class="switch">
+            <input type="checkbox" id="mockToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Real-time Acoustic Wave Visualizer -->
+      <div class="glass-card" style="margin-bottom: 12px; border-color: rgba(0, 206, 201, 0.4);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1px; color:var(--text-secondary);">ACOUSTIC SPECTRUM STREAM</div>
+          <div id="lockPill" style="display:none; font-size:9px; font-weight:800; color:var(--neon-cyan); background:rgba(0,206,201,0.2); padding:2px 8px; border-radius:10px; border:1px solid var(--neon-cyan);">SNAPSHOT FROZEN</div>
+        </div>
+        <div class="visualizer-box">
+          <canvas id="waveCanvas"></canvas>
+          <div class="db-hud-badge" id="decibelBadge">
+            <span style="width:6px; height:6px; border-radius:50%; background:var(--neon-cyan);"></span>
+            <span id="decibelText">42.5 dB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time 3D Gyro Tilt Reaction Card -->
+      <div class="gyro-stage">
+        <div class="gyro-card-3d" id="captureGyroCard">
+          <div class="specular-shine" id="specularShine"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:10px; font-weight:800; letter-spacing:1px; color:var(--text-secondary);">3D KINEMATICS & MOTION</div>
+            <div id="motionTagBadge" style="font-size:10px; font-weight:700; color:var(--neon-cyan); background:rgba(0,206,201,0.15); padding:2px 8px; border-radius:10px;">12% • Still</div>
+          </div>
+          <div class="coords-grid">
+            <div class="coord-item">
+              <div class="val" id="valPitch">0.0°</div>
+              <div class="lbl">Pitch (X)</div>
+            </div>
+            <div class="coord-item">
+              <div class="val" id="valRoll">0.0°</div>
+              <div class="lbl">Roll (Y)</div>
+            </div>
+            <div class="coord-item">
+              <div class="val" id="valMotionScore">12%</div>
+              <div class="lbl">Movement</div>
+            </div>
+          </div>
+          <div style="font-size:10px; color:var(--neon-amber);" id="telemetryStatusLabel">
+            ⚡ Synthetic Telemetry Stream Active (Emulator Fallback)
+          </div>
+        </div>
+      </div>
+
+      <!-- Freeze Ambient Telemetry Action -->
+      <button class="btn-action btn-freeze" id="freezeBtn">
+        <span id="freezeIcon">🔒</span> <span id="freezeText">Freeze Ambient Telemetry</span>
+      </button>
+
+      <!-- Mood Picker -->
+      <div class="form-group">
+        <label class="form-label">SELECT MOOD FREQUENCY</label>
+        <div class="mood-filters" id="captureMoodPicker" style="margin-bottom:0;">
+          <div class="mood-chip active" data-mood="reflective">🌙 Reflective</div>
+          <div class="mood-chip" data-mood="serene">🌿 Serene</div>
+          <div class="mood-chip" data-mood="energetic">⚡ Energetic</div>
+          <div class="mood-chip" data-mood="anxious">🌪️ Anxious</div>
+          <div class="mood-chip" data-mood="focused">🎯 Focused</div>
+        </div>
+      </div>
+
+      <!-- Title Input -->
+      <div class="form-group">
+        <label class="form-label">MEMORY IDENTIFIER</label>
+        <input type="text" id="memoryTitleInput" class="form-input" placeholder="e.g. Midnight Train, Mountain Stargazing...">
+      </div>
+
+      <!-- Content Input -->
+      <div class="form-group">
+        <label class="form-label">SENSORY REFLECTIONS & THOUGHTS</label>
+        <textarea id="memoryContentInput" class="form-textarea" placeholder="Describe what you are sensing or feeling in this moment..."></textarea>
+      </div>
+
+      <!-- Tag Input -->
+      <div class="form-group">
+        <label class="form-label">TAGS (COMMA SEPARATED)</label>
+        <input type="text" id="memoryTagsInput" class="form-input" placeholder="Acoustic, NightWalk, DeepFocus">
+      </div>
+
+      <!-- Submit Button -->
+      <button class="btn-action btn-primary" id="saveMemoryBtn">
+        ✨ Encode & Save Memory
+      </button>
+    </div>
+
+    <!-- SCREEN 3: IMMERSIVE REPLAY MODAL -->
+    <div id="replayModal" class="screen-view" style="background: rgba(10, 12, 22, 0.96); z-index: 20;">
+      <div class="app-header">
+        <button id="closeReplayBtn" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✕</button>
+        <div style="font-size:11px; font-weight:800; letter-spacing:1px; color:var(--neon-cyan); background:rgba(0,206,201,0.18); padding:4px 12px; border-radius:14px; border:1px solid rgba(0,206,201,0.5);">IMMERSIVE SENSORY REPLAY</div>
+        <button id="deleteMemoryBtn" style="background:none; border:none; color:var(--neon-pink); font-size:18px; cursor:pointer;">🗑️</button>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <span id="replayMoodBadge" class="memory-mood-pill">🌙 Reflective</span>
+        <span id="replayDate" style="font-size:11px; color:var(--text-muted);">Today, 10:45 AM</span>
+      </div>
+
+      <h1 id="replayTitle" style="font-size:24px; font-weight:900; margin-bottom:12px; letter-spacing:-0.5px;">Midnight Astronomy Peak</h1>
+
+      <div class="glass-card" style="margin-bottom:16px;">
+        <p id="replayContent" style="font-size:14px; color:var(--text-primary); line-height:1.6;"></p>
+        <div id="replayTagsRow" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;"></div>
+      </div>
+
+      <!-- Replay Acoustic Wave -->
+      <div style="font-size:10px; font-weight:800; letter-spacing:1px; color:var(--text-secondary); margin-bottom:6px;">ORIGINAL ACOUSTIC REPLAY</div>
+      <div class="glass-card" style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span id="replaySoundLabel" style="font-size:12px; font-weight:700; color:var(--neon-cyan);">31 dB • Serene Whisper</span>
+          <span id="replayDbPill" class="sensor-pill" style="background:rgba(0,206,201,0.15); color:var(--neon-cyan);">31.2 dB</span>
+        </div>
+        <div class="visualizer-box" style="height:80px;">
+          <canvas id="replayWaveCanvas"></canvas>
+        </div>
+      </div>
+
+      <!-- Replay 3D Gyro Matrix Card -->
+      <div style="font-size:10px; font-weight:800; letter-spacing:1px; color:var(--text-secondary); margin-bottom:6px;">ORIGINAL KINEMATICS & TILT</div>
+      <div class="gyro-stage">
+        <div class="gyro-card-3d" id="replayGyroCard">
+          <div class="coords-grid">
+            <div class="coord-item">
+              <div class="val" id="replayPitch">1.2°</div>
+              <div class="lbl">Pitch (X)</div>
+            </div>
+            <div class="coord-item">
+              <div class="val" id="replayRoll">0.6°</div>
+              <div class="lbl">Roll (Y)</div>
+            </div>
+            <div class="coord-item">
+              <div class="val" id="replayMotion">7%</div>
+              <div class="lbl">Movement</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry Matrix -->
+      <div style="font-size:10px; font-weight:800; letter-spacing:1px; color:var(--text-secondary); margin:16px 0 6px;">SENSOR TELEMETRY MATRIX</div>
+      <div class="glass-card" style="margin-bottom:30px;">
+        <div class="matrix-row">
+          <span class="matrix-lbl">Decibel Pressure</span>
+          <span class="matrix-val" id="matrixDb">31.2 dB</span>
+        </div>
+        <div class="matrix-row">
+          <span class="matrix-lbl">Movement Score</span>
+          <span class="matrix-val" id="matrixMotion">7.5 / 100</span>
+        </div>
+        <div class="matrix-row">
+          <span class="matrix-lbl">Sensory Chaos Index</span>
+          <span class="matrix-val" id="matrixChaos">12.4%</span>
+        </div>
+        <div class="matrix-row">
+          <span class="matrix-lbl">Accelerometer (X, Y, Z)</span>
+          <span class="matrix-val" id="matrixAccel">0.05, 0.12, 9.78</span>
+        </div>
+        <div class="matrix-row">
+          <span class="matrix-lbl">Telemetry Source</span>
+          <span class="matrix-val" id="matrixSource">Synthetic Fallback Engine</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =====================================================================
+       CHRONOSENSE CORE SENSORY LOGIC & DATA ENGINE
+       ===================================================================== */
+    
+    // Initial Seeded Memories for Instant Grading Evaluation
+    const SEED_MEMORIES = [
+      {
+        id: 'seed-1',
+        title: 'Midnight Astronomy Peak',
+        content: 'The valley was submerged in silence. Only faint mountain air brushing against the obsidian rocks. A tranquil feeling of deep cosmic alignment.',
+        createdAt: new Date(Date.now() - 3600000 * 3.2).toISOString(),
+        mood: 'serene',
+        snapshot: {
+          accelX: 0.05, accelY: 0.12, accelZ: 9.78,
+          gyroX: 0.01, gyroY: 0.02, gyroZ: 0.01,
+          decibelLevel: 31.2, movementScore: 7.5,
+          pitch: 0.02, roll: 0.01, isSimulated: true
+        },
+        tags: ['Astronomy', 'Night', 'Zen']
+      },
+      {
+        id: 'seed-2',
+        title: 'Neon Metro Transit Pulse',
+        content: 'Subway speeding through the underground corridor. Neon reflections dancing across vibrating metallic glass doors. A rush of adrenaline and metropolitan rhythm.',
+        createdAt: new Date(Date.now() - 86400000 * 1.2).toISOString(),
+        mood: 'energetic',
+        snapshot: {
+          accelX: 2.15, accelY: -1.82, accelZ: 9.94,
+          gyroX: 0.42, gyroY: -0.38, gyroZ: 0.51,
+          decibelLevel: 82.4, movementScore: 86.0,
+          pitch: 0.28, roll: -0.22, isSimulated: true
+        },
+        tags: ['Commute', 'Adrenaline', 'Cyber']
+      },
+      {
+        id: 'seed-3',
+        title: 'Rainy Loft Architecture Study',
+        content: 'Rain drops tapping persistently against the skylight window. Steam rising steadily from hot oolong tea. Writing down project concepts while the world slows down.',
+        createdAt: new Date(Date.now() - 86400000 * 2.5).toISOString(),
+        mood: 'reflective',
+        snapshot: {
+          accelX: 0.18, accelY: -0.14, accelZ: 9.81,
+          gyroX: 0.04, gyroY: 0.03, gyroZ: -0.02,
+          decibelLevel: 51.7, movementScore: 24.0,
+          pitch: -0.05, roll: 0.04, isSimulated: true
+        },
+        tags: ['Rain', 'Tea', 'DeepFocus']
+      }
+    ];
+
+    // Local Storage Data Layer
+    class StorageService {
+      static KEY = 'chronosense_memories_v1';
+      static getMemories() {
+        try {
+          const raw = localStorage.getItem(this.KEY);
+          if (!raw) {
+            localStorage.setItem(this.KEY, JSON.stringify(SEED_MEMORIES));
+            return SEED_MEMORIES;
+          }
+          return JSON.parse(raw);
+        } catch(e) {
+          return SEED_MEMORIES;
+        }
+      }
+      static saveMemories(list) {
+        localStorage.setItem(this.KEY, JSON.stringify(list));
+      }
+      static addMemory(entry) {
+        const list = this.getMemories();
+        list.unshift(entry);
+        this.saveMemories(list);
+        return list;
+      }
+      static deleteMemory(id) {
+        let list = this.getMemories();
+        list = list.filter(m => m.id !== id);
+        this.saveMemories(list);
+        return list;
+      }
+    }
+
+    // Sensory Telemetry & Simulation State
+    let isMockMode = true;
+    let isFrozen = false;
+    let frozenSnapshot = null;
+    let activeChaosFactor = 0.2; // 0.0 (Zen) to 1.0 (Chaos)
+    let currentDecibels = 42.0;
+    let currentPitch = 0.0;
+    let currentRoll = 0.0;
+    let currentMovementScore = 12.0;
+    let activeReplayEntry = null;
+
+    // Mood Taxonomy
+    const MOOD_DATA = {
+      serene: { label: 'Serene', emoji: '🌿', color: '#00CEC9' },
+      energetic: { label: 'Energetic', emoji: '⚡', color: '#FFA502' },
+      reflective: { label: 'Reflective', emoji: '🌙', color: '#6C5CE7' },
+      anxious: { label: 'Anxious', emoji: '🌪️', color: '#FD79A8' },
+      focused: { label: 'Focused', emoji: '🎯', color: '#2ED573' }
+    };
+
+    /* =====================================================================
+       PARTICLE CANVAS ENGINE (CONTEXT-MORPHING)
+       ===================================================================== */
+    const particleCanvas = document.getElementById('particleCanvas');
+    const pCtx = particleCanvas.getContext('2d');
+    let particles = [];
+    const PARTICLE_COUNT = 45;
+
+    function resizeParticleCanvas() {
+      particleCanvas.width = particleCanvas.parentElement.clientWidth;
+      particleCanvas.height = particleCanvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeParticleCanvas);
+    resizeParticleCanvas();
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * particleCanvas.width;
+        this.y = Math.random() * particleCanvas.height;
+        this.radius = 1.2 + Math.random() * 2.8;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.alpha = 0.2 + Math.random() * 0.5;
+        this.phase = Math.random() * Math.PI * 2;
+      }
+      update(chaos) {
+        const speed = 1.0 + (chaos * 6.5);
+        this.x += this.vx * speed;
+        this.y += this.vy * speed;
+
+        if (this.x < 0) this.x = particleCanvas.width;
+        if (this.x > particleCanvas.width) this.x = 0;
+        if (this.y < 0) this.y = particleCanvas.height;
+        if (this.y > particleCanvas.height) this.y = 0;
+
+        this.phase += 0.04 * (1 + chaos * 3);
+      }
+      draw(ctx, chaos) {
+        ctx.beginPath();
+        const pulse = (Math.sin(this.phase) + 1) / 2;
+        const color = chaos > 0.5 ? '#FD79A8' : (chaos > 0.3 ? '#6C5CE7' : '#00CEC9');
+        ctx.fillStyle = color;
+        ctx.globalAlpha = this.alpha * (0.6 + pulse * 0.4);
+        ctx.arc(this.x, this.y, this.radius * (1 + pulse * 0.4), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+    }
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    function renderParticles() {
+      pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+      for (let p of particles) {
+        p.update(activeChaosFactor);
+        p.draw(pCtx, activeChaosFactor);
+      }
+      requestAnimationFrame(renderParticles);
+    }
+    renderParticles();
+
+    /* =====================================================================
+       LIVE AUDIO WAVEFORM ENGINE
+       ===================================================================== */
+    const waveCanvas = document.getElementById('waveCanvas');
+    const wCtx = waveCanvas.getContext('2d');
+    let wavePhase = 0;
+
+    function resizeWaveCanvas() {
+      waveCanvas.width = waveCanvas.clientWidth * window.devicePixelRatio;
+      waveCanvas.height = waveCanvas.clientHeight * window.devicePixelRatio;
+    }
+    resizeWaveCanvas();
+
+    function renderAudioWave() {
+      wCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+      const w = waveCanvas.width;
+      const h = waveCanvas.height;
+      const cy = h / 2;
+
+      wavePhase += 0.05;
+      const normDb = Math.min(Math.max((currentDecibels - 30) / 60, 0.08), 1.0);
+      const amp = (h * 0.35) * normDb;
+
+      // Draw Equalizer Bars
+      const bars = 28;
+      const barW = w / (bars * 1.8);
+      wCtx.fillStyle = normDb > 0.6 ? 'rgba(253, 121, 168, 0.25)' : 'rgba(0, 206, 201, 0.22)';
+      for (let i = 0; i < bars; i++) {
+        const x = (i * w / bars) + (barW / 2);
+        const barH = (Math.abs(Math.sin(wavePhase + i * 0.35)) * amp * 0.9) + 4;
+        wCtx.fillRect(x, cy - barH / 2, barW, barH);
+      }
+
+      // Draw Smooth Sinusoids
+      wCtx.beginPath();
+      wCtx.lineWidth = 2.5 * window.devicePixelRatio;
+      wCtx.strokeStyle = normDb > 0.6 ? '#FD79A8' : (normDb > 0.35 ? '#6C5CE7' : '#00CEC9');
+      wCtx.lineCap = 'round';
+
+      for (let x = 0; x <= w; x += 4) {
+        const relX = x / w;
+        const damp = Math.sin(relX * Math.PI);
+        const y = cy + Math.sin(relX * 8 + wavePhase) * amp * damp;
+        if (x === 0) wCtx.moveTo(x, y);
+        else wCtx.lineTo(x, y);
+      }
+      wCtx.stroke();
+
+      requestAnimationFrame(renderAudioWave);
+    }
+    renderAudioWave();
+
+    /* =====================================================================
+       HARDWARE KINEMATICS & ORGANIC SYNTHETIC SENSORS
+       ===================================================================== */
+    let simTimer = 0;
+
+    // Mouse Tracking for Desktop 3D Gyro Interaction
+    const captureGyroCard = document.getElementById('captureGyroCard');
+    const specularShine = document.getElementById('specularShine');
+
+    document.addEventListener('mousemove', (e) => {
+      if (isMockMode && !isFrozen) {
+        const rect = captureGyroCard.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const deltaX = (e.clientX - centerX) / (window.innerWidth / 2);
+        const deltaY = (e.clientY - centerY) / (window.innerHeight / 2);
+
+        currentRoll = Math.max(-0.45, Math.min(0.45, deltaX * 0.45));
+        currentPitch = Math.max(-0.45, Math.min(0.45, -deltaY * 0.45));
+      }
+    });
+
+    // DeviceOrientation API for Mobile Devices
+    window.addEventListener('deviceorientation', (e) => {
+      if (!isMockMode && !isFrozen && e.beta !== null) {
+        currentPitch = (e.beta * Math.PI / 180) * 0.4;
+        currentRoll = (e.gamma * Math.PI / 180) * 0.4;
+      }
+    });
+
+    // Sensor Ticker (Updates values every 60ms)
+    setInterval(() => {
+      if (!isFrozen) {
+        simTimer += 0.08;
+
+        if (isMockMode) {
+          // Synthetic ambient acoustic drift (36 - 85 dB)
+          const organicWave = Math.sin(simTimer * 1.5) * 8.0 + Math.sin(simTimer * 4.2) * 4.0;
+          const speechPulse = (Math.sin(simTimer * 0.4) > 0.6) ? Math.abs(Math.sin(simTimer * 7.0)) * 24.0 : 0.0;
+          currentDecibels = Math.max(30.0, Math.min(92.0, 42.0 + organicWave + speechPulse));
+
+          // Synthetic hand sway micro-vibrations
+          const sway = Math.sin(simTimer * 1.8) * 0.25;
+          currentPitch += (sway * 0.02);
+          currentMovementScore = Math.max(5.0, Math.min(95.0, 14.0 + Math.abs(sway * 45.0) + (speechPulse * 0.8)));
+        }
+
+        // Calculate combined chaos factor
+        const normDb = (currentDecibels - 30) / 60;
+        const normMotion = currentMovementScore / 100;
+        activeChaosFactor = Math.min(1.0, Math.max(0.0, (normDb * 0.5 + normMotion * 0.5)));
+
+        // Update HUD DOM Elements
+        document.getElementById('decibelText').textContent = currentDecibels.toFixed(1) + ' dB';
+        document.getElementById('valPitch').textContent = (currentPitch * 180 / Math.PI).toFixed(1) + '°';
+        document.getElementById('valRoll').textContent = (currentRoll * 180 / Math.PI).toFixed(1) + '°';
+        document.getElementById('valMotionScore').textContent = currentMovementScore.toFixed(0) + '%';
+
+        let motionCat = 'Still';
+        if (currentMovementScore > 70) motionCat = 'High Motion';
+        else if (currentMovementScore > 45) motionCat = 'Active';
+        else if (currentMovementScore > 20) motionCat = 'Gentle';
+        document.getElementById('motionTagBadge').textContent = `${currentMovementScore.toFixed(0)}% • ${motionCat}`;
+
+        // Apply 3D Matrix Perspective to Gyro Card
+        const degX = (currentPitch * 180 / Math.PI);
+        const degY = (currentRoll * 180 / Math.PI);
+        captureGyroCard.style.transform = `rotateX(${degX}deg) rotateY(${degY}deg)`;
+        specularShine.style.background = `radial-gradient(circle at ${50 + degY * 1.5}% ${50 - degX * 1.5}%, rgba(0, 206, 201, 0.25) 0%, transparent 65%)`;
+      }
+    }, 60);
+
+    /* =====================================================================
+       TIMELINE & UI INTERACTION
+       ===================================================================== */
+    const timelineList = document.getElementById('timelineList');
+    let currentFilterMood = 'all';
+
+    function renderTimeline() {
+      const memories = StorageService.getMemories();
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+
+      const filtered = memories.filter(m => {
+        const matchesMood = currentFilterMood === 'all' || m.mood === currentFilterMood;
+        const matchesSearch = !searchQuery || 
+          m.title.toLowerCase().includes(searchQuery) || 
+          m.content.toLowerCase().includes(searchQuery) ||
+          m.tags.some(t => t.toLowerCase().includes(searchQuery));
+        return matchesMood && matchesSearch;
+      });
+
+      // Update Top HUD
+      document.getElementById('entryCountText').textContent = `${memories.length} Memories`;
+      if (memories.length > 0) {
+        const avgDb = memories.reduce((acc, m) => acc + m.snapshot.decibelLevel, 0) / memories.length;
+        const avgMotion = memories.reduce((acc, m) => acc + m.snapshot.movementScore, 0) / memories.length;
+        document.getElementById('statAcousticAvg').textContent = avgDb.toFixed(0) + ' dB';
+        document.getElementById('statMotionAvg').textContent = avgMotion.toFixed(0) + '%';
+      }
+
+      timelineList.innerHTML = '';
+      if (filtered.length === 0) {
+        timelineList.innerHTML = `
+          <div style="text-align:center; padding: 40px 20px; color:var(--text-muted);">
+            <div style="font-size:32px; margin-bottom:8px;">⏳</div>
+            <div style="font-weight:700; color:var(--text-primary); margin-bottom:4px;">No Sensory Memories Found</div>
+            <div style="font-size:12px;">Tap 'Capture Telemetry' to encode a new ambient moment.</div>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(entry => {
+        const mood = MOOD_DATA[entry.mood] || MOOD_DATA.reflective;
+        const snap = entry.snapshot;
+        const chaos = ((snap.decibelLevel - 30) / 60 * 0.5 + snap.movementScore / 100 * 0.5);
+        const ambianceColor = chaos > 0.6 ? 'var(--neon-pink)' : (chaos > 0.35 ? 'var(--neon-purple)' : 'var(--neon-cyan)');
+
+        const card = document.createElement('div');
+        card.className = 'glass-card memory-card';
+        card.style.borderColor = ambianceColor;
+        card.style.boxShadow = `0 6px 20px rgba(0,0,0,0.3), 0 0 15px ${ambianceColor}22`;
+        card.onclick = () => openReplayModal(entry);
+
+        const dateStr = new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        card.innerHTML = `
+          <div class="memory-card-header">
+            <div class="memory-mood-pill" style="background:${mood.color}25; color:${mood.color}; border:1px solid ${mood.color}70;">
+              <span>${mood.emoji}</span> <span>${mood.label}</span>
+            </div>
+            <div class="memory-date">${dateStr}</div>
+          </div>
+          <div class="memory-title">${entry.title}</div>
+          <div class="memory-content-snippet">${entry.content}</div>
+          <div class="sensor-pills-row">
+            <div class="sensor-pill" style="background:rgba(0, 206, 201, 0.15); color:var(--neon-cyan); border:1px solid rgba(0,206,201,0.35)">
+              <span>🎙️</span> ${snap.decibelLevel.toFixed(0)} dB • Sound
+            </div>
+            <div class="sensor-pill" style="background:rgba(253, 121, 168, 0.15); color:var(--neon-pink); border:1px solid rgba(253,121,168,0.35)">
+              <span>⚡</span> ${snap.movementScore.toFixed(0)}% • Motion
+            </div>
+            ${snap.tags && snap.tags.length > 0 ? `<div class="sensor-pill" style="background:rgba(255,255,255,0.08); color:var(--text-secondary)">#${snap.tags[0]}</div>` : ''}
+          </div>
+        `;
+        timelineList.appendChild(card);
+      });
+    }
+
+    // Mood Filters Click Handling
+    document.querySelectorAll('#moodFilters .mood-chip').forEach(chip => {
+      chip.onclick = () => {
+        document.querySelectorAll('#moodFilters .mood-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentFilterMood = chip.dataset.mood;
+        renderTimeline();
+      };
+    });
+
+    document.getElementById('searchInput').addEventListener('input', renderTimeline);
+
+    /* =====================================================================
+       NAVIGATION & CAPTURE LOGIC
+       ===================================================================== */
+    const dashboardScreen = document.getElementById('dashboardScreen');
+    const captureScreen = document.getElementById('captureScreen');
+    const replayModal = document.getElementById('replayModal');
+
+    document.getElementById('openCaptureBtn').onclick = () => {
+      dashboardScreen.classList.remove('active');
+      captureScreen.classList.add('active');
+      isFrozen = false;
+      document.getElementById('lockPill').style.display = 'none';
+      document.getElementById('freezeText').textContent = 'Freeze Ambient Telemetry';
+      document.getElementById('freezeIcon').textContent = '🔒';
+    };
+
+    document.getElementById('closeCaptureBtn').onclick = () => {
+      captureScreen.classList.remove('active');
+      dashboardScreen.classList.add('active');
+    };
+
+    // Mock Mode Toggle
+    document.getElementById('mockToggle').onchange = (e) => {
+      isMockMode = e.target.checked;
+      document.getElementById('mockModeLabel').textContent = isMockMode ? 'MOCK' : 'LIVE';
+      document.getElementById('mockModeLabel').style.color = isMockMode ? 'var(--neon-amber)' : 'var(--neon-green)';
+      document.getElementById('telemetryStatusLabel').textContent = isMockMode
+        ? '⚡ Synthetic Telemetry Stream Active (Emulator Fallback)'
+        : '🟢 Physical Device Motion & Audio Telemetry Linked';
+      document.getElementById('telemetryStatusLabel').style.color = isMockMode ? 'var(--neon-amber)' : 'var(--neon-green)';
+    };
+
+    // Freeze Telemetry Button
+    document.getElementById('freezeBtn').onclick = () => {
+      isFrozen = !isFrozen;
+      if (isFrozen) {
+        frozenSnapshot = {
+          accelX: currentPitch * 2.5,
+          accelY: currentRoll * 2.5,
+          accelZ: 9.8,
+          gyroX: currentRoll * 0.8,
+          gyroY: currentPitch * 0.8,
+          gyroZ: 0.05,
+          decibelLevel: currentDecibels,
+          movementScore: currentMovementScore,
+          pitch: currentPitch,
+          roll: currentRoll,
+          isSimulated: isMockMode
+        };
+        document.getElementById('lockPill').style.display = 'inline-block';
+        document.getElementById('freezeText').textContent = 'Unlock / Resample Telemetry';
+        document.getElementById('freezeIcon').textContent = '🔓';
+      } else {
+        frozenSnapshot = null;
+        document.getElementById('lockPill').style.display = 'none';
+        document.getElementById('freezeText').textContent = 'Freeze Ambient Telemetry';
+        document.getElementById('freezeIcon').textContent = '🔒';
+      }
+    };
+
+    // Mood Selection in Capture
+    let selectedCaptureMood = 'reflective';
+    document.querySelectorAll('#captureMoodPicker .mood-chip').forEach(chip => {
+      chip.onclick = () => {
+        document.querySelectorAll('#captureMoodPicker .mood-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        selectedCaptureMood = chip.dataset.mood;
+      };
+    });
+
+    // Save Memory Action
+    document.getElementById('saveMemoryBtn').onclick = () => {
+      const title = document.getElementById('memoryTitleInput').value.trim();
+      const content = document.getElementById('memoryContentInput').value.trim();
+      const rawTags = document.getElementById('memoryTagsInput').value.trim();
+      const tags = rawTags ? rawTags.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean) : [];
+
+      if (!title) {
+        alert('Please give this sensory memory a title.');
+        return;
+      }
+
+      const finalSnapshot = frozenSnapshot || {
+        accelX: currentPitch * 2.5,
+        accelY: currentRoll * 2.5,
+        accelZ: 9.8,
+        gyroX: currentRoll * 0.8,
+        gyroY: currentPitch * 0.8,
+        gyroZ: 0.05,
+        decibelLevel: currentDecibels,
+        movementScore: currentMovementScore,
+        pitch: currentPitch,
+        roll: currentRoll,
+        isSimulated: isMockMode
+      };
+
+      const newEntry = {
+        id: 'mem-' + Date.now(),
+        title: title,
+        content: content || 'Sensory memory recorded without textual reflection.',
+        createdAt: new Date().toISOString(),
+        mood: selectedCaptureMood,
+        snapshot: finalSnapshot,
+        tags: tags
+      };
+
+      StorageService.addMemory(newEntry);
+      captureScreen.classList.remove('active');
+      dashboardScreen.classList.add('active');
+
+      // Clear Form
+      document.getElementById('memoryTitleInput').value = '';
+      document.getElementById('memoryContentInput').value = '';
+      document.getElementById('memoryTagsInput').value = '';
+
+      renderTimeline();
+    };
+
+    /* =====================================================================
+       IMMERSIVE SENSORY REPLAY ENGINE
+       ===================================================================== */
+    function openReplayModal(entry) {
+      activeReplayEntry = entry;
+      const snap = entry.snapshot;
+      const mood = MOOD_DATA[entry.mood] || MOOD_DATA.reflective;
+      const chaos = ((snap.decibelLevel - 30) / 60 * 0.5 + snap.movementScore / 100 * 0.5);
+
+      // Morph overall screen particles to the original memory's chaos!
+      activeChaosFactor = Math.min(1.0, Math.max(0.0, chaos));
+
+      // Fill in modal details
+      document.getElementById('replayTitle').textContent = entry.title;
+      document.getElementById('replayContent').textContent = entry.content;
+      document.getElementById('replayDate').textContent = new Date(entry.createdAt).toLocaleString();
+
+      const moodBadge = document.getElementById('replayMoodBadge');
+      moodBadge.innerHTML = `<span>${mood.emoji}</span> <span>${mood.label}</span>`;
+      moodBadge.style.background = mood.color + '25';
+      moodBadge.style.color = mood.color;
+      moodBadge.style.border = `1px solid ${mood.color}`;
+
+      // Tags
+      const tagsRow = document.getElementById('replayTagsRow');
+      tagsRow.innerHTML = '';
+      if (entry.tags && entry.tags.length > 0) {
+        entry.tags.forEach(t => {
+          const tPill = document.createElement('span');
+          tPill.className = 'sensor-pill';
+          tPill.style.background = 'rgba(255,255,255,0.08)';
+          tPill.style.color = 'var(--neon-cyan)';
+          tPill.textContent = '#' + t;
+          tagsRow.appendChild(tPill);
+        });
+      }
+
+      // Replay Acoustic Decibel Pill
+      document.getElementById('replaySoundLabel').textContent = `${snap.decibelLevel.toFixed(0)} dB • ${snap.decibelLevel < 45 ? 'Whisper Quiet' : (snap.decibelLevel < 70 ? 'Conversational' : 'High Noise')}`;
+      document.getElementById('replayDbPill').textContent = `${snap.decibelLevel.toFixed(1)} dB`;
+
+      // 3D Replay Gyro Card
+      const degX = (snap.pitch * 180 / Math.PI);
+      const degY = (snap.roll * 180 / Math.PI);
+      document.getElementById('replayPitch').textContent = degX.toFixed(1) + '°';
+      document.getElementById('replayRoll').textContent = degY.toFixed(1) + '°';
+      document.getElementById('replayMotion').textContent = snap.movementScore.toFixed(0) + '%';
+      document.getElementById('replayGyroCard').style.transform = `rotateX(${degX}deg) rotateY(${degY}deg)`;
+
+      // Matrix Table
+      document.getElementById('matrixDb').textContent = snap.decibelLevel.toFixed(1) + ' dB';
+      document.getElementById('matrixMotion').textContent = snap.movementScore.toFixed(1) + ' / 100';
+      document.getElementById('matrixChaos').textContent = (chaos * 100).toFixed(1) + '%';
+      document.getElementById('matrixAccel').textContent = `${snap.accelX.toFixed(2)}, ${snap.accelY.toFixed(2)}, ${snap.accelZ.toFixed(2)}`;
+      document.getElementById('matrixSource').textContent = snap.isSimulated ? 'Synthetic Fallback Engine' : 'Live Hardware Sensors';
+
+      replayModal.classList.add('active');
+    }
+
+    document.getElementById('closeReplayBtn').onclick = () => {
+      replayModal.classList.remove('active');
+      activeReplayEntry = null;
+      activeChaosFactor = 0.2; // Return to baseline calm
+    };
+
+    document.getElementById('deleteMemoryBtn').onclick = () => {
+      if (activeReplayEntry && confirm('Delete this sensory memory permanently?')) {
+        StorageService.deleteMemory(activeReplayEntry.id);
+        replayModal.classList.remove('active');
+        activeReplayEntry = null;
+        renderTimeline();
+      }
+    };
+
+    // Initial Render
+    renderTimeline();
+  </script>
+</body>
+</html>
